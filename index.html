@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>二元一次方程组 - 一般形式探究</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        body { font-family: 'Microsoft YaHei', sans-serif; display: flex; background: #f0f2f5; padding: 20px; margin: 0; }
+        .controls { width: 350px; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-right: 20px; height: fit-content; }
+        .plot-area { flex-grow: 1; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: flex; justify-content: center; }
+        .slider-group { margin-bottom: 25px; padding: 15px; border: 1px solid #eee; border-radius: 8px; }
+        .line1-box { border-left: 5px solid #ef5350; }
+        .line2-box { border-left: 5px solid #42a5f5; }
+        .input-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+        label { font-weight: bold; font-size: 1.1em; }
+        input[type=number] { width: 70px; padding: 5px; border: 1px solid #ccc; border-radius: 4px; font-size: 1em; }
+        input[type=range] { width: 100%; cursor: pointer; }
+        .result { margin-top: 20px; padding: 15px; background: #fffde7; border-radius: 8px; border: 1px solid #fbc02d; font-weight: bold; min-height: 40px; }
+        h3 { margin-top: 0; color: #333; }
+        #plot { width: 100%; max-width: 800px; height: 700px; }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <h3>参数调节 <span style="font-size: 0.6em; color: #666;"></span></h3>
+        
+        <div class="slider-group line1-box">
+            <label>直线 l<sub>1</sub></label>
+            <div class="input-row" style="margin-top:10px;">
+                <span>斜率 k<sub>1</sub>:</span>
+                <input type="number" id="n_k1" step="0.1" value="1" onchange="validateAndSync('k1')" oninput="sync('k1', 'n')">
+            </div>
+            <input type="range" id="s_k1" min="-10" max="10" step="0.1" value="1" oninput="sync('k1', 's')">
+            
+            <div class="input-row" style="margin-top:15px;">
+                <span>截距 b<sub>1</sub>:</span>
+                <input type="number" id="n_b1" step="0.1" value="2" onchange="validateAndSync('b1')" oninput="sync('b1', 'n')">
+            </div>
+            <input type="range" id="s_b1" min="-10" max="10" step="0.1" value="2" oninput="sync('b1', 's')">
+        </div>
+
+        <div class="slider-group line2-box">
+            <label>直线 l<sub>2</sub></label>
+            <div class="input-row" style="margin-top:10px;">
+                <span>斜率 k<sub>2</sub>:</span>
+                <input type="number" id="n_k2" step="0.1" value="-1" onchange="validateAndSync('k2')" oninput="sync('k2', 'n')">
+            </div>
+            <input type="range" id="s_k2" min="-10" max="10" step="0.1" value="-1" oninput="sync('k2', 's')">
+            
+            <div class="input-row" style="margin-top:15px;">
+                <span>截距 b<sub>2</sub>:</span>
+                <input type="number" id="n_b2" step="0.1" value="5" onchange="validateAndSync('b2')" oninput="sync('b2', 'n')">
+            </div>
+            <input type="range" id="s_b2" min="-10" max="10" step="0.1" value="5" oninput="sync('b2', 's')">
+        </div>
+
+        <div class="result" id="res"></div>
+    </div>
+    
+    <div class="plot-area">
+        <div id="plot"></div>
+    </div>
+
+    <script>
+        // 实时同步，但不在此处强行拦截超出范围的值，以免影响输入体验
+        function sync(param, source) {
+            const slider = document.getElementById('s_' + param);
+            const number = document.getElementById('n_' + param);
+            let val = (source === 's') ? slider.value : number.value;
+
+            if (source === 's') {
+                number.value = val;
+            } else {
+                slider.value = val;
+            }
+            update();
+        }
+
+        // 最终校验：当用户输入完成（失去焦点或回车）时，强制限制值域
+        function validateAndSync(param) {
+            const number = document.getElementById('n_' + param);
+            const slider = document.getElementById('s_' + param);
+            let val = parseFloat(number.value);
+
+            if (val > 10) val = 10;
+            if (val < -10) val = -10;
+            if (isNaN(val)) val = 0;
+
+            number.value = val;
+            slider.value = val;
+            update();
+        }
+
+        function update() {
+            const k1 = parseFloat(document.getElementById('n_k1').value) || 0;
+            const b1 = parseFloat(document.getElementById('n_b1').value) || 0;
+            const k2 = parseFloat(document.getElementById('n_k2').value) || 0;
+            const b2 = parseFloat(document.getElementById('n_b2').value) || 0;
+
+            const xPoints = [];
+            for (let i = -30; i <= 30; i += 0.5) xPoints.push(i);
+
+            const trace1 = {
+                x: xPoints, y: xPoints.map(x => k1 * x + b1),
+                name: `y<sub>1</sub> = ${k1}x + ${b1}`,
+                line: {color: '#ef5350', width: 2.5}
+            };
+
+            const trace2 = {
+                x: xPoints, y: xPoints.map(x => k2 * x + b2),
+                name: `y<sub>2</sub> = ${k2}x + ${b2}`,
+                line: {color: '#42a5f5', width: 2.5}
+            };
+            
+            let data = [trace1, trace2];
+            let resText = "";
+
+            if (Math.abs(k1 - k2) < 0.0001) {
+                resText = (Math.abs(b1 - b2) < 0.0001) ? "无数个解 (重合)" : "无解 (平行)";
+            } else {
+                const ix = (b2 - b1) / (k1 - k2);
+                const iy = k1 * ix + b1;
+                resText = `交点: (${ix.toFixed(2)}, ${iy.toFixed(2)})`;
+                data.push({
+                    x: [ix], y: [iy], mode: 'markers+text',
+                    text: [`(${ix.toFixed(2)}, ${iy.toFixed(2)})`],
+                    textposition: 'top center',
+                    marker: {size: 12, color: '#333', symbol: 'diamond'},
+                    name: '交点'
+                });
+            }
+
+            document.getElementById('res').innerHTML = resText;
+
+            const layout = {
+                title: '二元一次方程组几何意义探究',
+                xaxis: { 
+                    range: [-15, 15], 
+                    title: 'x轴', 
+                    gridcolor: '#ddd',
+                    zerolinecolor: '#000'
+                },
+                yaxis: { 
+                    range: [-15, 15], 
+                    title: 'y轴', 
+                    gridcolor: '#ddd',
+                    zerolinecolor: '#000',
+                    scaleanchor: 'x', // 关键：确保x轴和y轴比例 1:1，防止图像压缩
+                    scaleratio: 1
+                },
+                margin: { l: 50, r: 50, b: 50, t: 80 },
+                showlegend: true
+            };
+
+            Plotly.react('plot', data, layout);
+        }
+
+        window.onload = update;
+    </script>
+</body>
+</html>
